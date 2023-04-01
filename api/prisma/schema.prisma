@@ -1,0 +1,53 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  name     String
+  email    String
+  password String
+
+  Task Task[]
+
+  @@map("users")
+}
+
+model Category {
+  id          Int    @id @default(autoincrement())
+  description String
+  user_id     Int
+
+  Task Task[]
+
+  @@map("categories")
+}
+
+model Task {
+  id             String   @id @default(uuid())
+  description    String
+  created_at     DateTime
+  expected_date  DateTime
+  completed_date DateTime?
+  completed      Int?
+
+  category_id Int?
+  category Category? @relation(fields: [category_id], references: [id])
+
+  user_id     Int
+  user User @relation(fields: [user_id], references: [id])
+
+  @@map("tasks")
+}
+
+/// 2029772
