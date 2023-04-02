@@ -5,7 +5,7 @@ import { prisma } from '../lib/prisma'
 
 
 export class TaskController {
-    async index(request: FastifyRequest, reply: FastifyReply) {
+    async index(request: FastifyRequest) {
         const user = request.user as User;
 
         const tasks = prisma.user.findMany({
@@ -30,16 +30,17 @@ export class TaskController {
             category_id: z.number().optional()
         })
 
+        
         const { description, category_id, expected_date } = taskBody.parse(request.body)
-
+        
         const user = request.user as User
-
+        
         const verifyCategory = await prisma.category.findMany({
             where: {
                 user_id: user.id
             }
         })
-
+        
         if(!verifyCategory)
             reply.code(404).send({ message: 'Você não possue categoria cadastrada.' })
 
@@ -62,7 +63,6 @@ export class TaskController {
         })
 
         reply.code(200).send({ message: 'Tarefa cadastrada com sucesso!' })
-   
     }
 
     async edit(request: FastifyRequest, reply: FastifyReply) {
@@ -94,6 +94,18 @@ export class TaskController {
     }
     
     async delete(request: FastifyRequest, reply: FastifyReply) {
-        
+        const deleteTaskParams = z.object({
+            id: z.string()
+        })
+
+        const { id } = deleteTaskParams.parse(request.params)
+
+        await prisma.task.delete({
+            where: {
+                id
+            }
+        })
+
+        return reply.code(200).send({ message: 'Tarefa deletada com sucesso!' })
     }
 }
