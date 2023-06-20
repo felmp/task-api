@@ -19,7 +19,9 @@
   },
   "devDependencies": {
     "@mermaid-js/mermaid-cli": "^10.0.2",
+    "@rocketseat/eslint-config": "^1.2.0",
     "@types/bcrypt": "^5.0.0",
+    "eslint": "^8.43.0",
     "prisma": "^4.11.0",
     "prisma-erd-generator": "^1.4.2",
     "tsx": "^3.12.6",
