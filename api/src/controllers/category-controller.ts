@@ -3,77 +3,76 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 
-
 export class CategoryController {
-    async index(request: FastifyRequest){
-        const user = request.user as User
+  async index(request: FastifyRequest) {
+    const user = request.user as User;
 
-        const category = await prisma.category.findMany({
-            where: {
-                user_id: user.id
-            }
-        })
+    const category = await prisma.category.findMany({
+      where: {
+        user_id: user.id,
+      },
+    });
 
-        return category
-    }
-    
-    async create(request: FastifyRequest, reply: FastifyReply){
-        const createCategoryBody = z.object({
-            description: z.string()
-        })
+    return category;
+  }
 
-        const { description } = createCategoryBody.parse(request.body)
+  async create(request: FastifyRequest, reply: FastifyReply) {
+    const createCategoryBody = z.object({
+      description: z.string(),
+    });
 
-        const user = request.user as User
+    const { description } = createCategoryBody.parse(request.body);
 
-        await prisma.category.create({
-            data: {
-                description,
-                user_id: user.id
-            }
-        })
+    const user = request.user as User;
 
-        reply.code(200).send({ message: 'Categoria criada com sucesso!' })
-    }
+    await prisma.category.create({
+      data: {
+        description,
+        user_id: user.id,
+      },
+    });
 
-    async edit(request: FastifyRequest, reply: FastifyReply){
-        const editCategoryParams = z.object({
-            id: z.string()
-        })
+    reply.code(200).send({ message: "Categoria criada com sucesso!" });
+  }
 
-        const editCategoryBody = z.object({
-            description: z.string()
-        })
+  async edit(request: FastifyRequest, reply: FastifyReply) {
+    const editCategoryParams = z.object({
+      id: z.string(),
+    });
 
-        const { id } = editCategoryParams.parse(request.params)
+    const editCategoryBody = z.object({
+      description: z.string(),
+    });
 
-        const { description } = editCategoryBody.parse(request.body)
+    const { id } = editCategoryParams.parse(request.params);
 
-        await prisma.category.update({
-            data: {
-                description
-            },
-            where: {
-                id: Number(id)
-            }
-        })
+    const { description } = editCategoryBody.parse(request.body);
 
-        return reply.code(200).send({ message: 'Categoria editada com sucesso!' })
-    }
+    await prisma.category.update({
+      data: {
+        description,
+      },
+      where: {
+        id: Number(id),
+      },
+    });
 
-    async delete(request: FastifyRequest, reply: FastifyReply){
-        const deleteCategoryParams = z.object({
-            id: z.string()
-        })
+    return reply.code(200).send({ message: "Categoria editada com sucesso!" });
+  }
 
-        const { id } = deleteCategoryParams.parse(request.params)
+  async delete(request: FastifyRequest, reply: FastifyReply) {
+    const deleteCategoryParams = z.object({
+      id: z.string(),
+    });
 
-        await prisma.category.delete({
-            where: {
-                id: Number(id)
-            }
-        })
+    const { id } = deleteCategoryParams.parse(request.params);
 
-        return reply.code(200).send({ message: 'Categoria deletada com sucesso!' })
-    }
+    await prisma.category.delete({
+      where: {
+        id: Number(id),
+      },
+    });
+
+    return reply.code(200).send({ message: "Categoria deletada com sucesso!" });
+  }
 }

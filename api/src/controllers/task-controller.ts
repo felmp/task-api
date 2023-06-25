@@ -1,111 +1,118 @@
-import { User } from '@prisma/client'
-import { FastifyReply, FastifyRequest } from 'fastify'
-import { z } from 'zod'
-import { prisma } from '../lib/prisma'
-
+import { User } from "@prisma/client";
+import { FastifyReply, FastifyRequest } from "fastify";
+import { z } from "zod";
+import { prisma } from "../lib/prisma";
 
 export class TaskController {
-    async index(request: FastifyRequest) {
-        const user = request.user as User;
+  async index(request: FastifyRequest) {
+    const user = request.user as User;
 
-        const tasks = prisma.user.findMany({
-            select: {
-                Task: {}
-            },
-            where: {
-                id: user.id
-            }
-        })
+    const tasks = prisma.user.findMany({
+      select: {
+        Task: {},
+      },
+      where: {
+        id: user.id,
+      },
+    });
 
-        return tasks
+    return tasks;
+  }
+
+  async create(request: FastifyRequest, reply: FastifyReply) {
+    const taskBody = z.object({
+      description: z.string({
+        required_error: "Descrição é obrigatório",
+        description: "Descrição é obrigatória",
+      }),
+      expectedDate: z.string(),
+      categoryId: z.number().optional(),
+    });
+
+    const { description, categoryId, expectedDate } = taskBody.parse(
+      request.body
+    );
+
+    const user = request.user as User;
+
+    const verifyCategory = await prisma.category.findMany({
+      where: {
+        user_id: user.id,
+      },
+    });
+
+    if (!verifyCategory)
+      reply
+        .code(404)
+        .send({ message: "Você não possue categoria cadastrada." });
+
+    if (categoryId) {
+      const verifyCategoryUser = verifyCategory.find(
+        (c) => c.id === categoryId
+      );
+
+      if (!verifyCategoryUser)
+        reply
+          .code(404)
+          .send({ message: "Você não possue esta categoria cadastrada." });
     }
 
-    async create(request: FastifyRequest, reply: FastifyReply) {
-        const taskBody = z.object({
-            description: z.string({
-                required_error: 'Descrição é obrigatório',
-                description: 'Descrição é obrigatória'
-            }),
-            expected_date: z.string(),
-            category_id: z.number().optional()
-        })
+    await prisma.task.create({
+      data: {
+        description,
+        created_at: new Date(),
+        expected_date: new Date(expectedDate),
+        category_id: categoryId ?? null,
+        user_id: user.id,
+      },
+    });
 
-        
-        const { description, category_id, expected_date } = taskBody.parse(request.body)
-        
-        const user = request.user as User
-        
-        const verifyCategory = await prisma.category.findMany({
-            where: {
-                user_id: user.id
-            }
-        })
-        
-        if(!verifyCategory)
-            reply.code(404).send({ message: 'Você não possue categoria cadastrada.' })
+    reply.code(200).send({ message: "Tarefa cadastrada com sucesso!" });
+  }
 
-        if(category_id) {
-            const verifyCategoryUser = verifyCategory.find(c => c.id == category_id);
+  async edit(request: FastifyRequest, reply: FastifyReply) {
+    const editTaskParams = z.object({
+      id: z.string(),
+    });
 
-            if(!verifyCategoryUser)
-            reply.code(404).send({ message: 'Você não possue esta categoria cadastrada.' })
-        }
+    const editTaskBody = z.object({
+      description: z.string(),
+      expectedDate: z.string(),
+      categoryId: z.number().optional(),
+    });
 
-        
-        await prisma.task.create({
-            data: {
-                description,
-                created_at: new Date(),
-                expected_date: new Date(expected_date),
-                category_id: category_id ?? null,
-                user_id: user.id
-            }
-        })
+    const { id } = editTaskParams.parse(request.params);
+    const { description, expectedDate, categoryId } = editTaskBody.parse(
+      request.body
+    );
 
-        reply.code(200).send({ message: 'Tarefa cadastrada com sucesso!' })
-    }
+    await prisma.task.update({
+      data: {
+        description,
+        expected_date: new Date(expectedDate),
+        category_id: categoryId ?? null,
+      },
+      where: {
+        id,
+      },
+    });
 
-    async edit(request: FastifyRequest, reply: FastifyReply) {
-        const editTaskParams = z.object({
-            id: z.string()
-        })
+    return reply.code(200).send({ message: "Tarefa alterada com sucesso!" });
+  }
 
-        const editTaskBody = z.object({
-            description: z.string(),
-            expected_date: z.string(),
-            category_id: z.number().optional(),
-        })
+  async delete(request: FastifyRequest, reply: FastifyReply) {
+    const deleteTaskParams = z.object({
+      id: z.string(),
+    });
 
-        const { id } = editTaskParams.parse(request.params)
-        const { description, expected_date, category_id } = editTaskBody.parse(request.body)
+    const { id } = deleteTaskParams.parse(request.params);
 
-        await prisma.task.update({
-            data: {
-                description: description,
-                expected_date: new Date(expected_date),
-                category_id: category_id,
-            },
-            where: {
-                id: id
-            }
-        })
+    await prisma.task.delete({
+      where: {
+        id,
+      },
+    });
 
-        return reply.code(200).send({ message: 'Tarefa alterada com sucesso!' })
-    }
-    
-    async delete(request: FastifyRequest, reply: FastifyReply) {
-        const deleteTaskParams = z.object({
-            id: z.string()
-        })
-
-        const { id } = deleteTaskParams.parse(request.params)
-
-        await prisma.task.delete({
-            where: {
-                id
-            }
-        })
-
-        return reply.code(200).send({ message: 'Tarefa deletada com sucesso!' })
-    }
+    return reply.code(200).send({ message: "Tarefa deletada com sucesso!" });
+  }
 }
